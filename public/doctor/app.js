@@ -76,8 +76,12 @@ function renderScenarioList() {
   ul.innerHTML = '';
   scenarios.forEach((s) => {
     const li = document.createElement('li');
+    const phasesHtml = (s.phases || []).map((p) =>
+      `${escapeHtml(p.label)} : ${p.days} j, toutes les ${humanizeMinutes(p.frequencyMinutes)}`
+    ).join('<br>');
     li.innerHTML = `<span><span class="name">${escapeHtml(s.name)}</span><br>
-      <span class="pseudo">gabarit ${s.gabarit.min}–${s.gabarit.max} · ${s.phases.length} phase(s)</span></span>`;
+      <span class="pseudo">gabarit ${s.gabarit.min}–${s.gabarit.max} · ${s.phases.length} phase(s)</span>
+      ${phasesHtml ? `<br><span class="pseudo">${phasesHtml}</span>` : ''}</span>`;
     ul.appendChild(li);
   });
 }
@@ -227,14 +231,42 @@ async function savePatient() {
 
 // --- Création scénario ----------------------------------------------------
 
-function addPhaseRow(label = '', days = '', freq = '') {
+// Conversions durée <-> minutes (pour saisir en j/h/min)
+function splitMinutes(total) {
+  total = Math.max(0, Number(total) || 0);
+  return {
+    d: Math.floor(total / 1440),
+    h: Math.floor((total % 1440) / 60),
+    m: total % 60,
+  };
+}
+function humanizeMinutes(total) {
+  total = Number(total) || 0;
+  if (!total) return '—';
+  const { d, h, m } = splitMinutes(total);
+  const parts = [];
+  if (d) parts.push(`${d} j`);
+  if (h) parts.push(`${h} h`);
+  if (m) parts.push(`${m} min`);
+  return parts.join(' ');
+}
+
+function addPhaseRow(label = '', days = '', freqMinutes = '') {
   const wrap = document.getElementById('phaseRows');
   const row = document.createElement('div');
   row.className = 'phase-row';
+  const f = freqMinutes === '' ? { d: '', h: '', m: '' } : splitMinutes(freqMinutes);
   row.innerHTML = `
     <label>Libellé<input class="p-label" type="text" value="${escapeAttr(label)}" placeholder="ex. Phase aiguë"></label>
-    <label>Jours<input class="p-days" type="number" min="1" value="${days}"></label>
-    <label>Fréquence (min)<input class="p-freq" type="number" min="1" value="${freq}" placeholder="ex. 240"></label>
+    <label>Durée (jours)<input class="p-days" type="number" min="1" value="${days}"></label>
+    <div class="p-freq-cell">
+      <span class="p-freq-title">Fréquence de saisie (toutes les…)</span>
+      <div class="p-freq-group">
+        <label>jours<input class="p-fd" type="number" min="0" value="${f.d}" placeholder="0"></label>
+        <label>heures<input class="p-fh" type="number" min="0" max="23" value="${f.h}" placeholder="0"></label>
+        <label>min<input class="p-fm" type="number" min="0" max="59" value="${f.m}" placeholder="0"></label>
+      </div>
+    </div>
     <button class="rm" title="Supprimer" type="button">×</button>`;
   row.querySelector('.rm').addEventListener('click', () => row.remove());
   wrap.appendChild(row);
@@ -243,11 +275,25 @@ function addPhaseRow(label = '', days = '', freq = '') {
 async function saveScenario() {
   const err = document.getElementById('scenarioFormError');
   err.hidden = true;
-  const phases = [...document.querySelectorAll('#phaseRows .phase-row')].map((r) => ({
-    label: r.querySelector('.p-label').value.trim(),
-    days: Number(r.querySelector('.p-days').value),
-    frequencyMinutes: Number(r.querySelector('.p-freq').value),
-  })).filter((p) => p.label && p.days && p.frequencyMinutes);
+  const rows = [...document.querySelectorAll('#phaseRows .phase-row')];
+  const phases = [];
+  let partial = false;
+  rows.forEach((r) => {
+    const label = r.querySelector('.p-label').value.trim();
+    const days = Number(r.querySelector('.p-days').value);
+    const fd = Number(r.querySelector('.p-fd').value) || 0;
+    const fh = Number(r.querySelector('.p-fh').value) || 0;
+    const fm = Number(r.querySelector('.p-fm').value) || 0;
+    const frequencyMinutes = fd * 1440 + fh * 60 + fm;
+    if (!label && !days && !frequencyMinutes) return; // ligne vide ignorée
+    if (!label || !days || !frequencyMinutes) { partial = true; return; }
+    phases.push({ label, days, frequencyMinutes });
+  });
+  if (partial) {
+    err.textContent = 'Chaque phase doit avoir un libellé, une durée en jours et une fréquence non nulle.';
+    err.hidden = false;
+    return;
+  }
 
   const payload = {
     name: document.getElementById('sName').value.trim(),

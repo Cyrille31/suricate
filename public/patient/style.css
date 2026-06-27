@@ -44,6 +44,19 @@ html, body {
   font-weight: 600;
 }
 .pill.online { background: #1f9d6b; }
+.logout {
+  background: rgba(255, 255, 255, .18);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  font-size: .8rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.logout:hover { background: rgba(255, 255, 255, .3); }
+.logout:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 main {
   max-width: 560px;

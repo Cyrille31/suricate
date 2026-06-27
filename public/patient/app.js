@@ -25,6 +25,20 @@ let selectedValue = null;
 
 function show(name) {
   Object.entries(screens).forEach(([k, el]) => { el.hidden = k !== name; });
+  // Le bouton « Quitter » n'a de sens qu'une fois connecté.
+  document.getElementById('logoutBtn').hidden = (name === 'connect');
+}
+
+function logout() {
+  // On efface seulement l'identité connectée sur cet appareil.
+  // Les éventuelles saisies en attente d'envoi sont conservées (elles sont
+  // rattachées à leur patient et partiront au prochain accès en ligne).
+  localStorage.removeItem(LS_PATIENT);
+  patient = null;
+  selectedValue = null;
+  const input = document.getElementById('pseudoInput');
+  if (input) input.value = '';
+  show('connect');
 }
 
 function uuid() {
@@ -236,6 +250,7 @@ function init() {
   document.getElementById('manualReminder').addEventListener('click', scheduleReminder);
   document.getElementById('helpBtn').addEventListener('click', () => show('help'));
   document.getElementById('backBtn').addEventListener('click', () => show('done'));
+  document.getElementById('logoutBtn').addEventListener('click', logout);
 
   window.addEventListener('online', () => { updateNet(); flushQueue(); });
   window.addEventListener('offline', updateNet);
