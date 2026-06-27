@@ -1,0 +1,12 @@
+# Dépendances (aucune pour le MVP-0, mais au cas où)
+node_modules/
+
+# Base de données locale (données de démonstration / dev)
+server/data/db.json
+server/data/db.json.tmp
+server/data/db.json.bak
+
+# Système
+.DS_Store
+*.log
+.env

@@ -1,0 +1,18 @@
+{
+  "name": "suricate",
+  "version": "0.1.0",
+  "description": "Suivi de la douleur post-opératoire à domicile (MVP-0).",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "seed": "node server/seed.js",
+    "reset": "node -e \"require('fs').rmSync('server/data/db.json',{force:true});console.log('Base réinitialisée.')\"",
+    "test": "node test/smoke.js"
+  },
+  "dependencies": {},
+  "license": "MIT"
+}

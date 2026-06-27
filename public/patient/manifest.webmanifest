@@ -1,0 +1,19 @@
+{
+  "name": "Suricate — Mon suivi",
+  "short_name": "Suricate",
+  "description": "Suivi de la douleur post-opératoire à domicile.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EEF2F4",
+  "theme_color": "#0E7C7B",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

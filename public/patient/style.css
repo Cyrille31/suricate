@@ -1,0 +1,149 @@
+:root {
+  --teal: #0E7C7B;
+  --teal-dark: #0A5E5D;
+  --ink: #1B2733;
+  --muted: #5B6B7A;
+  --bg: #EEF2F4;
+  --surface: #FFFFFF;
+  --border: #DCE4E8;
+  --alert: #C0392B;
+  --warn: #E08A1E;
+  --radius: 14px;
+  --pad: 20px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px var(--pad);
+  padding-top: max(14px, env(safe-area-inset-top));
+  background: var(--teal);
+  color: #fff;
+}
+.sentinel svg { fill: #fff; display: block; }
+.brand { font-weight: 700; font-size: 1.2rem; letter-spacing: .5px; }
+.pill {
+  margin-left: auto;
+  font-size: .8rem;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .18);
+  font-weight: 600;
+}
+.pill.online { background: #1f9d6b; }
+
+main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--pad);
+  padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
+}
+
+.screen { animation: fade .2s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+h1 { font-size: 1.55rem; line-height: 1.2; margin: 12px 0 6px; }
+.lead { color: var(--muted); margin: 0 0 22px; }
+.muted { color: var(--muted); font-size: .92rem; }
+
+.text-input {
+  width: 100%;
+  font-size: 1.15rem;
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  background: var(--surface);
+}
+.text-input:focus { outline: 3px solid var(--teal); border-color: var(--teal); }
+
+.btn {
+  display: block;
+  width: 100%;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 18px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  margin-top: 14px;
+  font-family: inherit;
+}
+.btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.btn-big { padding: 22px; font-size: 1.25rem; }
+.btn-primary { background: var(--teal); color: #fff; }
+.btn-primary:hover { background: var(--teal-dark); }
+.btn-primary:disabled { background: #aab8bf; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--teal); font-weight: 600; }
+
+/* Échelle de douleur : grille de grosses cibles tactiles, couleur 0->10 */
+.scale {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 8px 0 10px;
+}
+.scale button {
+  aspect-ratio: 1 / 1;
+  font-size: 1.9rem;
+  font-weight: 800;
+  border: 3px solid transparent;
+  border-radius: var(--radius);
+  color: #1b2733;
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.scale button:active { transform: scale(.96); }
+.scale button[aria-checked="true"] {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, .12);
+}
+.scale button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.scale-legend {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: .9rem;
+  margin-bottom: 6px;
+}
+
+.checkmark {
+  width: 84px; height: 84px;
+  margin: 16px auto 8px;
+  border-radius: 50%;
+  background: #1f9d6b;
+  color: #fff;
+  font-size: 3rem;
+  display: flex; align-items: center; justify-content: center;
+}
+#screen-done { text-align: center; }
+
+.card {
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 16px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.card.warn { border-color: var(--warn); background: #fff7ec; }
+.card.warn strong { color: #9a5a00; }
+
+.error { color: var(--alert); font-weight: 600; margin-top: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen { animation: none; }
+  .scale button { transition: none; }
+}

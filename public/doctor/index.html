@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Suricate — Tableau de bord médecin</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <span class="sentinel" aria-hidden="true">
+      <svg viewBox="0 0 24 32" width="20" height="27">
+        <path d="M12 1c2.2 0 3.6 1.7 3.6 4 0 1.4-.5 2.6-1.3 3.4 2.4 1 4 3.2 4 6.4v10.7c0 2.5-1.4 4.5-3.4 4.5h-1.1v-6.8h-1.6v6.8H10c-2 0-3.4-2-3.4-4.5V14.8c0-3.2 1.6-5.4 4-6.4-.8-.8-1.3-2-1.3-3.4 0-2.3 1.5-4 3.6-4Z"/>
+        <circle cx="10.3" cy="4.6" r=".9" fill="#0E7C7B"/>
+        <circle cx="13.7" cy="4.6" r=".9" fill="#0E7C7B"/>
+      </svg>
+    </span>
+    <span class="brand">Suricate</span>
+    <span class="subtitle">Tableau de bord médecin</span>
+    <nav class="tabs">
+      <button class="tab active" data-tab="patients">Patients</button>
+      <button class="tab" data-tab="scenarios">Scénarios</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Onglet PATIENTS -->
+    <section id="tab-patients" class="tab-panel">
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-head">
+            <h2>Patients</h2>
+            <button id="newPatientBtn" class="btn btn-sm btn-primary">+ Nouveau</button>
+          </div>
+          <ul id="patientList" class="patient-list"></ul>
+          <p class="privacy-note">
+            Le nom des patients n'est <strong>jamais</strong> envoyé au serveur.
+            La correspondance pseudo ↔ nom reste sur ce poste (navigateur).
+          </p>
+        </aside>
+
+        <div class="content">
+          <!-- Détail patient -->
+          <div id="patientDetail" class="detail" hidden>
+            <div id="alertBanner" class="alert-banner" hidden></div>
+            <div class="detail-head">
+              <div>
+                <h2 id="dName">—</h2>
+                <p class="muted" id="dMeta">—</p>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Évolution de la douleur</h3>
+              <div id="chart" class="chart"></div>
+              <div class="chart-key">
+                <span><i class="key-band"></i> Gabarit attendu</span>
+                <span><i class="key-line"></i> Douleur déclarée</span>
+                <span><i class="key-alert"></i> Hors gabarit (alerte)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Création patient -->
+          <div id="patientForm" class="detail" hidden>
+            <h2>Nouveau patient</h2>
+            <div class="card form">
+              <label>Nom du patient <span class="muted">(reste sur ce poste)</span>
+                <input id="fName" type="text" placeholder="Nom complet" />
+              </label>
+              <label>Pseudo <span class="muted">(envoyé au serveur)</span>
+                <input id="fPseudo" type="text" placeholder="ex. patient-2024-017" />
+              </label>
+              <label>Scénario
+                <select id="fScenario"></select>
+              </label>
+              <div class="row">
+                <label>Opération
+                  <input id="fOperation" type="text" placeholder="ex. Prothèse de hanche" />
+                </label>
+                <label>Tranche d'âge
+                  <input id="fAge" type="text" placeholder="ex. 60-69" />
+                </label>
+                <label>Sexe
+                  <select id="fSex">
+                    <option value="">—</option>
+                    <option value="F">F</option>
+                    <option value="M">M</option>
+                    <option value="Autre">Autre</option>
+                  </select>
+                </label>
+              </div>
+              <p id="patientFormError" class="error" hidden></p>
+              <div class="actions">
+                <button id="savePatient" class="btn btn-primary">Créer le patient</button>
+                <button id="cancelPatient" class="btn btn-ghost">Annuler</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="emptyState" class="empty">
+            <p>Sélectionnez un patient à gauche, ou créez-en un nouveau.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Onglet SCÉNARIOS -->
+    <section id="tab-scenarios" class="tab-panel" hidden>
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-head">
+            <h2>Scénarios</h2>
+          </div>
+          <ul id="scenarioList" class="patient-list"></ul>
+        </aside>
+        <div class="content">
+          <div class="detail">
+            <h2>Nouveau scénario</h2>
+            <div class="card form">
+              <label>Nom
+                <input id="sName" type="text" placeholder="ex. Appendicectomie — 10 jours" />
+              </label>
+              <label>Description
+                <textarea id="sDesc" rows="2" placeholder="Contexte clinique, consignes…"></textarea>
+              </label>
+              <div class="row">
+                <label>Gabarit douleur — min
+                  <input id="sMin" type="number" min="0" max="10" value="0" />
+                </label>
+                <label>Gabarit douleur — max
+                  <input id="sMax" type="number" min="0" max="10" value="6" />
+                </label>
+              </div>
+              <h3>Phases</h3>
+              <div id="phaseRows"></div>
+              <button id="addPhase" class="btn btn-sm btn-ghost">+ Ajouter une phase</button>
+              <p id="scenarioFormError" class="error" hidden></p>
+              <div class="actions">
+                <button id="saveScenario" class="btn btn-primary">Créer le scénario</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
