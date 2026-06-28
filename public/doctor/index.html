@@ -8,15 +8,13 @@
 </head>
 <body>
   <header class="topbar">
-    <span class="sentinel" aria-hidden="true">
-      <svg viewBox="0 0 24 32" width="20" height="27">
-        <path d="M12 1c2.2 0 3.6 1.7 3.6 4 0 1.4-.5 2.6-1.3 3.4 2.4 1 4 3.2 4 6.4v10.7c0 2.5-1.4 4.5-3.4 4.5h-1.1v-6.8h-1.6v6.8H10c-2 0-3.4-2-3.4-4.5V14.8c0-3.2 1.6-5.4 4-6.4-.8-.8-1.3-2-1.3-3.4 0-2.3 1.5-4 3.6-4Z"/>
-        <circle cx="10.3" cy="4.6" r=".9" fill="#0E7C7B"/>
-        <circle cx="13.7" cy="4.6" r=".9" fill="#0E7C7B"/>
-      </svg>
-    </span>
+    <img class="logo" src="../assets/logo_suricate.gif" alt="" />
     <span class="brand">Suricate</span>
     <span class="subtitle">Tableau de bord médecin</span>
+    <a class="moe" href="https://www.cgexcel.fr" target="_blank" rel="noopener" title="CGExcel">
+      <img src="../assets/logo_cgexcel.jpg" alt="" class="moe-icon" />
+      <span class="moe-text"><span class="moe-name">CGExcel</span><span class="moe-version">v0.4.0</span></span>
+    </a>
     <nav class="tabs">
       <button class="tab active" data-tab="patients">Patients</button>
       <button class="tab" data-tab="scenarios">Scénarios</button>
@@ -53,9 +51,17 @@
               <h3>Évolution de la douleur</h3>
               <div id="chart" class="chart"></div>
               <div class="chart-key">
-                <span><i class="key-band"></i> Gabarit attendu</span>
+                <span><i class="key-band"></i> Seuil d'alerte (variable)</span>
                 <span><i class="key-line"></i> Douleur déclarée</span>
                 <span><i class="key-alert"></i> Hors gabarit (alerte)</span>
+              </div>
+              <p class="chart-hint">Molette de la souris = zoom · barre en bas = défilement horizontal.</p>
+            </div>
+            <div class="card">
+              <h3>Qualité du sommeil</h3>
+              <div id="sleepChart" class="chart"></div>
+              <div class="chart-key">
+                <span><i class="key-sleep"></i> Sommeil déclaré (0 mauvais → 10 excellent)</span>
               </div>
             </div>
           </div>
@@ -70,9 +76,8 @@
               <label>Pseudo <span class="muted">(envoyé au serveur)</span>
                 <input id="fPseudo" type="text" placeholder="ex. patient-2024-017" />
               </label>
-              <label>Scénario
-                <select id="fScenario"></select>
-              </label>
+              <label>Scénarios <span class="muted">(un ou plusieurs, ex. douleur + sommeil)</span></label>
+              <div id="fScenarios" class="checklist"></div>
               <div class="row">
                 <label>Opération
                   <input id="fOperation" type="text" placeholder="ex. Prothèse de hanche" />
@@ -110,13 +115,18 @@
         <aside class="sidebar">
           <div class="sidebar-head">
             <h2>Scénarios</h2>
+            <button id="newScenarioBtn" class="btn btn-sm btn-primary">+ Nouveau</button>
           </div>
           <ul id="scenarioList" class="patient-list"></ul>
+          <p class="privacy-note">Cliquez un scénario pour le modifier.</p>
         </aside>
         <div class="content">
           <div class="detail">
-            <h2>Nouveau scénario</h2>
+            <h2 id="scenarioFormTitle">Nouveau scénario</h2>
             <div class="card form">
+              <label>Partir d'un scénario existant <span class="muted">(optionnel)</span>
+                <select id="sCopyFrom"></select>
+              </label>
               <label>Nom
                 <input id="sName" type="text" placeholder="ex. Appendicectomie — 10 jours" />
               </label>
@@ -124,19 +134,32 @@
                 <textarea id="sDesc" rows="2" placeholder="Contexte clinique, consignes…"></textarea>
               </label>
               <div class="row">
-                <label>Gabarit douleur — min
-                  <input id="sMin" type="number" min="0" max="10" value="0" />
+                <label>Mesure
+                  <select id="sMetric">
+                    <option value="pain">Douleur</option>
+                    <option value="sleep">Sommeil</option>
+                  </select>
                 </label>
-                <label>Gabarit douleur — max
-                  <input id="sMax" type="number" min="0" max="10" value="6" />
+                <label>Précision de la jauge
+                  <select id="sPrecision">
+                    <option value="0">Entier (0,1,2…)</option>
+                    <option value="1">1 décimale (0,1)</option>
+                    <option value="2">2 décimales (0,01)</option>
+                  </select>
                 </label>
               </div>
+              <p class="muted" style="margin-top:0">
+                Le seuil d'alerte se définit <strong>par phase</strong> (un niveau au début
+                et à la fin) ; il varie ainsi dans le temps. Laisser vide = aucune alerte
+                (typique du sommeil).
+              </p>
               <h3>Phases</h3>
               <div id="phaseRows"></div>
               <button id="addPhase" class="btn btn-sm btn-ghost">+ Ajouter une phase</button>
               <p id="scenarioFormError" class="error" hidden></p>
               <div class="actions">
                 <button id="saveScenario" class="btn btn-primary">Créer le scénario</button>
+                <button id="duplicateScenario" class="btn btn-ghost" hidden>Dupliquer comme nouveau</button>
               </div>
             </div>
           </div>

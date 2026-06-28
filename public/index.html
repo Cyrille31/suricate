@@ -7,24 +7,31 @@
   <style>
     body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
            background: #EEF2F4; color: #1B2733; display: grid; place-items: center; min-height: 100vh; }
-    .box { background: #fff; border: 1px solid #DCE4E8; border-radius: 16px; padding: 40px; max-width: 460px; text-align: center; }
-    h1 { color: #0E7C7B; margin: 0 0 4px; }
+    .box { background: #fff; border: 1px solid #DCE4E8; border-radius: 16px; padding: 36px 40px; max-width: 460px; text-align: center; }
+    .crest { width: 96px; height: 96px; border-radius: 22px; object-fit: cover; }
+    h1 { color: #0E7C7B; margin: 14px 0 4px; }
     p { color: #5B6B7A; }
-    a { display: block; margin-top: 14px; padding: 16px; border-radius: 12px; text-decoration: none; font-weight: 700; }
+    a.btn { display: block; margin-top: 14px; padding: 16px; border-radius: 12px; text-decoration: none; font-weight: 700; }
     .a1 { background: #0E7C7B; color: #fff; }
     .a2 { background: #e3f1f0; color: #0A5E5D; }
-    svg { fill: #0E7C7B; }
     .tag { font-size: .8rem; color: #5B6B7A; margin-top: 18px; }
+    .moe { display: flex; align-items: center; justify-content: center; gap: 10px;
+           margin-top: 22px; padding-top: 18px; border-top: 1px solid #DCE4E8; color: #5B6B7A; font-size: .82rem; }
+    .moe img { height: 40px; border-radius: 6px; }
   </style>
 </head>
 <body>
   <div class="box">
-    <svg viewBox="0 0 24 32" width="34" height="45"><path d="M12 1c2.2 0 3.6 1.7 3.6 4 0 1.4-.5 2.6-1.3 3.4 2.4 1 4 3.2 4 6.4v10.7c0 2.5-1.4 4.5-3.4 4.5h-1.1v-6.8h-1.6v6.8H10c-2 0-3.4-2-3.4-4.5V14.8c0-3.2 1.6-5.4 4-6.4-.8-.8-1.3-2-1.3-3.4 0-2.3 1.5-4 3.6-4Z"/></svg>
+    <img class="crest" src="assets/logo_suricate.gif" alt="Logo Suricate" />
     <h1>Suricate</h1>
     <p>Suivi de la douleur post-opératoire à domicile</p>
-    <a class="a1" href="/patient/">Application patient</a>
-    <a class="a2" href="/doctor/">Tableau de bord médecin</a>
-    <p class="tag">MVP-0 — prototype de démonstration</p>
+    <a class="btn a1" href="/patient/">Application patient</a>
+    <a class="btn a2" href="/doctor/">Tableau de bord médecin</a>
+    <p class="tag">MVP-0 · v0.4.0 — prototype de démonstration</p>
+    <div class="moe">
+      <span>Maître d'œuvre</span>
+      <img src="assets/logo_cgexcel.jpg" alt="CGExcel" />
+    </div>
   </div>
 </body>
 </html>

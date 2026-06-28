@@ -30,25 +30,35 @@ Puis ouvrez :
 Commandes utiles :
 
 ```bash
-npm test         # test de fumée de l'API (bout en bout)
-npm run reset    # efface la base locale
+npm test          # test de fumée de l'API (bout en bout)
+npm run reset     # efface la base locale
+npm run seed:demo # gros jeu de test : 10 scénarios, 20 patients, 15 mesures chacun
 ```
 
 ---
 
 ## Ce que fait le MVP‑0
 
-- **App patient (PWA)** : connexion par pseudo, échelle de douleur 0–10 à
-  grandes cibles tactiles, validation. **Fonctionne hors‑ligne** : les saisies
-  sont mises en file d'attente locale et envoyées dès le retour du réseau, de
-  façon **idempotente** (pas de doublon). Installable sur l'écran d'accueil.
-- **Tableau de bord médecin** : liste des patients, création de patient,
-  création de scénarios (phases + gabarit), **courbe d'évolution** avec
-  enveloppe de gabarit et **alerte** sur les points hors gabarit.
-- **Centralisation** via une API REST.
+- **App patient (PWA)** : connexion par pseudo, puis saisie sur **jauge** — on
+  déplace le curseur, la valeur s'affiche en grand, un gros bouton **Validation**.
+  Le patient enchaîne les métriques qu'il suit (douleur, sommeil…). La **douleur
+  accepte des décimales** (0, 1 ou 2 chiffres, réglé par le scénario).
+  **Fonctionne hors‑ligne** (file d'attente, envoi idempotent). Bouton **Quitter**.
+- **Scénarios typés** : chaque scénario porte une **mesure** (douleur ou
+  sommeil), une **précision décimale**, des **phases** (fréquence en j/h/min) et
+  un **seuil d'alerte variable** (niveau au début et à la fin de chaque phase,
+  interpolé ; optionnel). Le médecin peut **modifier** un scénario et en **créer
+  un à partir d'un existant** (copie).
+- **Plusieurs scénarios par patient** : on peut affecter, p. ex., un scénario
+  douleur **et** un scénario sommeil au même patient.
+- **Tableau de bord médecin** : liste des patients, **courbe de douleur** avec
+  seuil variable + **courbe de sommeil**, alerte sur dépassement de seuil.
+  Graphiques **zoomables à la molette** et **défilables** (axe gradué par jour,
+  ou par lundi quand c'est trop serré).
 - **Confidentialité** : le serveur ne stocke **jamais** le nom du patient,
   seulement le pseudo. La correspondance pseudo ↔ nom reste dans le navigateur
-  du médecin (cf. spécifications).
+  du médecin.
+- **Identité** : logos Suricate et CGExcel (maître d'œuvre) intégrés.
 
 ### Confidentialité — principe retenu
 

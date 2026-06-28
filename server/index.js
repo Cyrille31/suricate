@@ -59,25 +59,106 @@ function readBody(req) {
   });
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
- * Construit la série affichée par le médecin : points de douleur, enveloppe
- * (gabarit) du scénario, et liste des points hors-gabarit (= alertes).
+ * Découpe un scénario en phases situées dans le temps à partir de la date de
+ * début du patient.
+ */
+function buildPhaseTimeline(startDate, scenario) {
+  const t0 = new Date(startDate).getTime();
+  const phases = (scenario && scenario.phases) || [];
+  let cursor = t0;
+  const intervals = phases.map((p) => {
+    const start = cursor;
+    const end = cursor + (Number(p.days) || 0) * DAY_MS;
+    cursor = end;
+    return { start, end, gabaritStart: p.gabaritStart, gabaritEnd: p.gabaritEnd };
+  });
+  return { t0, end: cursor, intervals };
+}
+
+// Seuil d'alerte interpolé à l'instant t (null si pas de seuil défini).
+function ceilingAt(t, timeline) {
+  const iv = timeline.intervals;
+  if (!iv.length) return null;
+  const interp = (p) => {
+    if (p.gabaritStart == null || p.gabaritEnd == null) return null;
+    const frac = p.end > p.start ? Math.max(0, Math.min(1, (t - p.start) / (p.end - p.start))) : 0;
+    return p.gabaritStart + frac * (p.gabaritEnd - p.gabaritStart);
+  };
+  if (t <= iv[0].start) return iv[0].gabaritStart;
+  const last = iv[iv.length - 1];
+  if (t >= last.end) return last.gabaritEnd;
+  for (const p of iv) if (t >= p.start && t < p.end) return interp(p);
+  return last.gabaritEnd;
+}
+
+function envelopeFor(timeline) {
+  const env = [];
+  timeline.intervals.forEach((p) => {
+    if (p.gabaritStart != null) env.push({ t: new Date(p.start).toISOString(), ceiling: p.gabaritStart });
+    if (p.gabaritEnd != null) env.push({ t: new Date(p.end).toISOString(), ceiling: p.gabaritEnd });
+  });
+  return env;
+}
+
+// Série d'une métrique (douleur ou sommeil) selon SON scénario.
+function seriesForMetric(patient, scenario, measurements) {
+  const timeline = buildPhaseTimeline(
+    patient.startDate,
+    scenario || { phases: [] }
+  );
+  const points = measurements.map((m) => {
+    const t = new Date(m.recordedAt).getTime();
+    const ceiling = scenario ? ceilingAt(t, timeline) : null;
+    const outOfBounds = ceiling != null && m.value > ceiling;
+    return { t: m.recordedAt, value: m.value, ceiling, outOfBounds };
+  });
+  return {
+    points,
+    envelope: scenario ? envelopeFor(timeline) : [],
+    scenario: scenario
+      ? { id: scenario.id, name: scenario.name, metric: scenario.metric || 'pain', precision: scenario.precision || 0 }
+      : null,
+    timelineEnd: timeline.end,
+  };
+}
+
+/**
+ * Construit la série affichée par le médecin. Un patient peut avoir plusieurs
+ * scénarios ; on en prend un par métrique (douleur / sommeil).
  */
 function buildSeries(patient) {
-  const scenario = store.getScenario(patient.scenarioId);
-  const gabarit = scenario ? scenario.gabarit : { min: 0, max: 10 };
-  const points = store.listMeasurements(patient.id).map((m) => {
-    const outOfBounds = m.value < gabarit.min || m.value > gabarit.max;
-    return { t: m.recordedAt, value: m.value, outOfBounds };
-  });
-  const alerts = points.filter((p) => p.outOfBounds);
+  const scenarios = store.getScenarioIds(patient)
+    .map((id) => store.getScenario(id))
+    .filter(Boolean);
+  const all = store.listMeasurements(patient.id);
+
+  const findScn = (metric) => scenarios.find((s) => (s.metric || 'pain') === metric);
+  const painScn = findScn('pain');
+  const sleepScn = findScn('sleep');
+
+  const pain = seriesForMetric(patient, painScn, all.filter((m) => m.type !== 'sleep'));
+  const sleep = seriesForMetric(patient, sleepScn, all.filter((m) => m.type === 'sleep'));
+  const alerts = pain.points.filter((p) => p.outOfBounds);
+
+  // Axe temps global (couvre tous les scénarios + mesures débordantes).
+  const t0 = new Date(patient.startDate).getTime();
+  const times = all.map((m) => new Date(m.recordedAt).getTime());
+  const ends = [pain.timelineEnd, sleep.timelineEnd].filter((v) => Number.isFinite(v));
+  const start = Math.min(t0, ...(times.length ? times : [t0]));
+  const end = Math.max(t0 + DAY_MS, ...ends, ...(times.length ? times : [t0]));
+
   return {
     patient,
-    scenario: scenario
-      ? { id: scenario.id, name: scenario.name, phases: scenario.phases }
-      : null,
-    gabarit,
-    points,
+    scenarios: scenarios.map((s) => ({
+      id: s.id, name: s.name, metric: s.metric || 'pain',
+      precision: s.precision || 0, phases: s.phases,
+    })),
+    timeline: { start: new Date(start).toISOString(), end: new Date(end).toISOString() },
+    pain: { points: pain.points, envelope: pain.envelope, scenario: pain.scenario },
+    sleep: { points: sleep.points, envelope: sleep.envelope, scenario: sleep.scenario },
     alerts,
     alertActive: alerts.length > 0,
   };
@@ -93,7 +174,7 @@ async function handleApi(req, res, url) {
   try {
     // /api/health
     if (seg[0] === 'health' && method === 'GET') {
-      return sendJSON(res, 200, { ok: true, service: 'suricate', version: '0.1.0' });
+      return sendJSON(res, 200, { ok: true, service: 'suricate', version: '0.4.0' });
     }
 
     // /api/scenarios
@@ -102,6 +183,18 @@ async function handleApi(req, res, url) {
       if (method === 'POST') {
         const body = await readBody(req);
         return sendJSON(res, 201, store.createScenario(body));
+      }
+    }
+
+    // /api/scenarios/:id  (édition d'un scénario existant)
+    if (seg[0] === 'scenarios' && seg[1] && seg.length === 2) {
+      if (method === 'GET') {
+        const s = store.getScenario(seg[1]);
+        return s ? sendJSON(res, 200, s) : sendJSON(res, 404, { error: 'Scénario introuvable.' });
+      }
+      if (method === 'PUT' || method === 'PATCH') {
+        const body = await readBody(req);
+        return sendJSON(res, 200, store.updateScenario(seg[1], body));
       }
     }
 
@@ -118,8 +211,8 @@ async function handleApi(req, res, url) {
     if (seg[0] === 'patients' && seg[1] === 'by-pseudo' && seg[2] && method === 'GET') {
       const p = store.getPatientByPseudo(decodeURIComponent(seg[2]));
       if (!p) return sendJSON(res, 404, { error: 'Pseudo inconnu.' });
-      const scenario = store.getScenario(p.scenarioId);
-      return sendJSON(res, 200, { patient: p, scenario });
+      const scenarios = store.getScenarioIds(p).map((id) => store.getScenario(id)).filter(Boolean);
+      return sendJSON(res, 200, { patient: p, scenarios });
     }
 
     // /api/patients/:id ...

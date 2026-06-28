@@ -1,59 +1,79 @@
 'use strict';
 
 /**
- * Initialise des données de démonstration : un scénario type « prothèse de
- * hanche » avec un gabarit de douleur, et un patient de démonstration.
- * Lancer avec : npm run seed
+ * Données de démonstration :
+ *  - un scénario DOULEUR (jauge 1 décimale, gabarit décroissant),
+ *  - un scénario SOMMEIL (jauge entière, informatif),
+ *  - un patient démo abonné aux DEUX scénarios.
+ * Lancer : npm run seed
  */
 
 const store = require('./store');
 
-function run() {
-  const existing = store.listScenarios();
-  let scenario = existing.find((s) => s.name === 'Prothèse de hanche — suivi 14 jours');
+function getOrCreateScenario(match, def) {
+  const found = store.listScenarios().find(match);
+  if (found) { console.log(`Scénario déjà présent : ${found.name}`); return found; }
+  const s = store.createScenario(def);
+  console.log(`Scénario créé : ${s.name} (${s.metric}, ${s.precision} déc.)`);
+  return s;
+}
 
-  if (!scenario) {
-    scenario = store.createScenario({
-      name: 'Prothèse de hanche — suivi 14 jours',
-      description:
-        'Suivi de la douleur post-opératoire après pose de prothèse de hanche. '
-        + 'Fréquence élevée les premiers jours, puis dégressive.',
+function run() {
+  const pain = getOrCreateScenario(
+    (s) => s.name === 'Douleur — prothèse de hanche (14 j)',
+    {
+      name: 'Douleur — prothèse de hanche (14 j)',
+      description: 'Suivi de la douleur post-opératoire. Seuil d\'alerte décroissant.',
+      metric: 'pain',
+      precision: 1,
       phases: [
-        { label: 'Phase aiguë', days: 3, frequencyMinutes: 240 },   // toutes les 4 h
-        { label: 'Phase intermédiaire', days: 4, frequencyMinutes: 720 }, // 2x/jour
-        { label: 'Phase de consolidation', days: 7, frequencyMinutes: 1440 }, // 1x/jour
+        { label: 'Phase aiguë', days: 3, frequencyMinutes: 240, gabaritStart: 8, gabaritEnd: 6 },
+        { label: 'Phase intermédiaire', days: 4, frequencyMinutes: 720, gabaritStart: 6, gabaritEnd: 4 },
+        { label: 'Phase de consolidation', days: 7, frequencyMinutes: 1440, gabaritStart: 4, gabaritEnd: 2 },
       ],
-      // Gabarit : enveloppe de douleur jugée « normale ». Au-delà, alerte.
-      gabarit: { min: 0, max: 6 },
-      questions: [], // enrichi en MVP-1 (booléen, photo cicatrice, sommeil, ...)
-    });
-    console.log(`Scénario créé : ${scenario.name} (${scenario.id})`);
-  } else {
-    console.log(`Scénario déjà présent : ${scenario.name} (${scenario.id})`);
-  }
+    }
+  );
+
+  const sleep = getOrCreateScenario(
+    (s) => s.name === 'Sommeil — suivi 14 jours',
+    {
+      name: 'Sommeil — suivi 14 jours',
+      description: 'Qualité du sommeil, une fois par jour (informatif, sans alerte).',
+      metric: 'sleep',
+      precision: 0,
+      phases: [
+        { label: 'Suivi quotidien', days: 14, frequencyMinutes: 1440 }, // pas de seuil
+      ],
+    }
+  );
 
   let patient = store.getPatientByPseudo('demo-hirondelle');
   if (!patient) {
+    const base = Date.now() - 1000 * 60 * 60 * 24 * 3; // début : il y a 3 jours
     patient = store.createPatient({
       pseudo: 'demo-hirondelle',
-      scenarioId: scenario.id,
+      scenarioIds: [pain.id, sleep.id],
+      startDate: new Date(base).toISOString(),
       operation: 'Prothèse totale de hanche',
       ageRange: '60-69',
       sex: 'F',
     });
-    console.log(`Patient de démo créé : ${patient.pseudo} (${patient.id})`);
+    console.log(`Patient de démo créé : ${patient.pseudo} (2 scénarios)`);
 
-    // Quelques mesures, dont une au-dessus du gabarit pour montrer l'alerte.
-    const base = Date.now() - 1000 * 60 * 60 * 24 * 3; // il y a 3 jours
-    const sample = [2, 3, 4, 5, 8, 4, 3, 2]; // le 8 déclenche une alerte
-    sample.forEach((v, i) => {
-      store.addMeasurement(patient.id, {
-        value: v,
-        recordedAt: new Date(base + i * 1000 * 60 * 60 * 8).toISOString(),
-        clientId: `seed-${i}`,
-      });
-    });
-    console.log(`${sample.length} mesures de démonstration ajoutées.`);
+    const painVals = [2, 3.5, 4, 5.5, 8, 4, 3, 2.5];
+    painVals.forEach((v, i) => store.addMeasurement(patient.id, {
+      type: 'pain', value: v,
+      recordedAt: new Date(base + i * 1000 * 60 * 60 * 8).toISOString(),
+      clientId: `seed-pain-${i}`,
+    }));
+
+    const sleepVals = [4, 6, 7];
+    sleepVals.forEach((v, i) => store.addMeasurement(patient.id, {
+      type: 'sleep', value: v,
+      recordedAt: new Date(base + i * 1000 * 60 * 60 * 24 + 1000 * 60 * 60 * 8).toISOString(),
+      clientId: `seed-sleep-${i}`,
+    }));
+    console.log(`${painVals.length} mesures de douleur + ${sleepVals.length} de sommeil.`);
   } else {
     console.log(`Patient de démo déjà présent : ${patient.pseudo}`);
   }

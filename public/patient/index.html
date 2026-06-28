@@ -10,20 +10,14 @@
 </head>
 <body>
   <header class="topbar">
-    <span class="sentinel" aria-hidden="true">
-      <svg viewBox="0 0 24 32" width="22" height="29">
-        <path d="M12 1c2.2 0 3.6 1.7 3.6 4 0 1.4-.5 2.6-1.3 3.4 2.4 1 4 3.2 4 6.4v10.7c0 2.5-1.4 4.5-3.4 4.5h-1.1v-6.8h-1.6v6.8H10c-2 0-3.4-2-3.4-4.5V14.8c0-3.2 1.6-5.4 4-6.4-.8-.8-1.3-2-1.3-3.4 0-2.3 1.5-4 3.6-4Z"/>
-        <circle cx="10.3" cy="4.6" r=".9" fill="#fff"/>
-        <circle cx="13.7" cy="4.6" r=".9" fill="#fff"/>
-      </svg>
-    </span>
+    <img class="logo" src="../assets/logo_suricate.gif" alt="" />
     <span class="brand">Suricate</span>
     <span id="netStatus" class="pill" role="status">Hors&nbsp;ligne</span>
     <button id="logoutBtn" class="logout" hidden>Quitter</button>
   </header>
 
   <main id="app">
-    <!-- Écran de connexion par pseudo -->
+    <!-- Connexion par pseudo -->
     <section id="screen-connect" class="screen">
       <h1>Bienvenue</h1>
       <p class="lead">Entrez le pseudo que votre médecin vous a donné.</p>
@@ -33,25 +27,29 @@
       <p id="connectError" class="error" hidden></p>
     </section>
 
-    <!-- Écran principal : saisie de la douleur -->
-    <section id="screen-pain" class="screen" hidden>
-      <h1>Votre douleur en ce moment ?</h1>
-      <p class="lead">Touchez un chiffre, de 0 (aucune douleur) à 10 (insupportable).</p>
+    <!-- Jauge générique (douleur, sommeil, …) -->
+    <section id="screen-gauge" class="screen" hidden>
+      <p id="gaugeStep" class="step-indicator"></p>
+      <h1 id="gaugeTitle">—</h1>
+      <p id="gaugeLead" class="lead">Déplacez le curseur, puis validez.</p>
 
-      <div id="scale" class="scale" role="radiogroup" aria-label="Niveau de douleur de 0 à 10"></div>
+      <output id="gaugeValue" class="gauge-value-xl">0</output>
 
+      <input id="gaugeSlider" class="slider" type="range" min="0" max="10" step="1" value="5"
+             aria-label="Valeur de 0 à 10" />
       <div class="scale-legend">
-        <span>0 · aucune</span>
-        <span>10 · insupportable</span>
+        <span id="gaugeMinLabel">0</span>
+        <span id="gaugeMaxLabel">10</span>
       </div>
 
-      <button id="submitBtn" class="btn btn-primary btn-big" disabled>Valider</button>
+      <button id="gaugeValidate" class="btn btn-primary btn-big">Validation</button>
+      <button id="gaugeSkip" class="btn btn-ghost" hidden>Passer cette question</button>
 
       <p id="pendingNote" class="muted" hidden></p>
       <button id="manualReminder" class="btn btn-ghost">Programmer un rappel de test</button>
     </section>
 
-    <!-- Écran de confirmation -->
+    <!-- Confirmation -->
     <section id="screen-done" class="screen" hidden>
       <div class="checkmark" aria-hidden="true">✓</div>
       <h1>Merci, c'est enregistré</h1>
@@ -60,21 +58,25 @@
       <button id="helpBtn" class="btn btn-ghost">Aide &amp; numéros utiles</button>
     </section>
 
-    <!-- Aide / mode d'emploi -->
+    <!-- Aide -->
     <section id="screen-help" class="screen" hidden>
       <h1>Aide</h1>
-      <p>À chaque rappel, ouvrez l'application et indiquez votre niveau de douleur,
-         puis validez. Si vous êtes hors réseau, vos saisies sont gardées et
-         envoyées automatiquement plus tard.</p>
+      <p>À chaque rappel, ouvrez l'application et renseignez les jauges demandées,
+         puis validez. Hors réseau, vos saisies sont gardées et envoyées plus tard.</p>
       <div class="card warn">
         <strong>En cas d'urgence, appelez le 15 (SAMU).</strong>
         <p>Cette application ne remplace pas un appel d'urgence.</p>
       </div>
-      <p class="muted">Questions sur le suivi : contactez votre médecin
-         (coordonnées fournies lors de la consultation).</p>
+      <p class="muted">Questions sur le suivi : contactez votre médecin.</p>
       <button id="backBtn" class="btn btn-ghost">Retour</button>
     </section>
   </main>
+
+  <footer class="signature">
+    <img src="../assets/logo_suricate.gif" alt="" />
+    <span class="sig-name">CGExcel</span>
+    <span class="sig-version">v0.4.0</span>
+  </footer>
 
   <script src="app.js"></script>
 </body>

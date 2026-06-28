@@ -90,26 +90,60 @@ function getScenario(id) {
 /**
  * scenario = {
  *   name, description,
- *   phases: [{ label, days, frequencyMinutes }],
- *   gabarit: { min: number, max: number }   // enveloppe de douleur attendue
- *   questions: [...]                         // (MVP-1, ignoré pour l'instant)
+ *   metric: 'pain' | 'sleep',     // ce que le scénario mesure
+ *   precision: 0 | 1 | 2,         // nombre de décimales pour la saisie (jauge)
+ *   phases: [{ label, days, frequencyMinutes, gabaritStart, gabaritEnd }],
  * }
+ * gabaritStart / gabaritEnd = seuil d'alerte (0-10) au début et à la fin de la
+ * phase, interpolé linéairement (gabarit variable dans le temps). Ils peuvent
+ * être null (ex. scénario de sommeil) -> aucune alerte.
  */
+function normGab(v) {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(10, Math.max(0, n));
+}
+
+function normalizePhase(p) {
+  return {
+    label: String((p && p.label) || ''),
+    days: Number((p && p.days) || 0),
+    frequencyMinutes: Number((p && p.frequencyMinutes) || 0),
+    gabaritStart: normGab(p && p.gabaritStart),
+    gabaritEnd: normGab(p && p.gabaritEnd),
+  };
+}
+
+function normMetric(m) { return m === 'sleep' ? 'sleep' : 'pain'; }
+function normPrecision(p) { const n = Number(p); return [0, 1, 2].includes(n) ? n : 0; }
+
 function createScenario(input) {
   const scenario = {
     id: newId('scn'),
     name: String(input.name || 'Scénario sans nom'),
     description: String(input.description || ''),
-    phases: Array.isArray(input.phases) ? input.phases : [],
-    gabarit: input.gabarit && typeof input.gabarit === 'object'
-      ? { min: Number(input.gabarit.min ?? 0), max: Number(input.gabarit.max ?? 10) }
-      : { min: 0, max: 10 },
-    questions: Array.isArray(input.questions) ? input.questions : [],
+    metric: normMetric(input.metric),
+    precision: normPrecision(input.precision),
+    phases: (Array.isArray(input.phases) ? input.phases : []).map(normalizePhase),
     createdAt: nowISO(),
   };
   load().scenarios.push(scenario);
   save();
   return scenario;
+}
+
+function updateScenario(id, input) {
+  const s = getScenario(id);
+  if (!s) throw new Error('Scénario introuvable.');
+  if (input.name != null) s.name = String(input.name);
+  if (input.description != null) s.description = String(input.description);
+  if (input.metric != null) s.metric = normMetric(input.metric);
+  if (input.precision != null) s.precision = normPrecision(input.precision);
+  if (Array.isArray(input.phases)) s.phases = input.phases.map(normalizePhase);
+  s.updatedAt = nowISO();
+  save();
+  return s;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,13 +166,21 @@ function createPatient(input) {
   const pseudo = String(input.pseudo || '').trim();
   if (!pseudo) throw new Error('Le pseudo est obligatoire.');
   if (getPatientByPseudo(pseudo)) throw new Error('Ce pseudo existe déjà.');
-  const scenario = getScenario(input.scenarioId);
-  if (!scenario) throw new Error('Scénario introuvable.');
+
+  // Un patient peut avoir plusieurs scénarios (ex. un pour la douleur, un pour
+  // le sommeil). On accepte scenarioIds (tableau) ou scenarioId (ancien champ).
+  const ids = Array.isArray(input.scenarioIds)
+    ? input.scenarioIds
+    : (input.scenarioId ? [input.scenarioId] : []);
+  if (!ids.length) throw new Error('Au moins un scénario est requis.');
+  for (const sid of ids) {
+    if (!getScenario(sid)) throw new Error('Scénario introuvable.');
+  }
 
   const patient = {
     id: newId('pat'),
     pseudo,                       // jamais le nom réel
-    scenarioId: scenario.id,
+    scenarioIds: ids,
     startDate: input.startDate || nowISO(),
     // Données accessibles aux chercheurs (anonymes) :
     operation: String(input.operation || ''),
@@ -149,6 +191,12 @@ function createPatient(input) {
   load().patients.push(patient);
   save();
   return patient;
+}
+
+// Récupère les scénarios d'un patient (compatibilité ancien champ scenarioId).
+function getScenarioIds(patient) {
+  if (patient.scenarioIds && patient.scenarioIds.length) return patient.scenarioIds;
+  return patient.scenarioId ? [patient.scenarioId] : [];
 }
 
 // ---------------------------------------------------------------------------
@@ -179,14 +227,15 @@ function addMeasurement(patientId, input) {
 
   const value = Number(input.value);
   if (!Number.isFinite(value) || value < 0 || value > 10) {
-    throw new Error('La valeur de douleur doit être un nombre entre 0 et 10.');
+    throw new Error('La valeur doit être un nombre entre 0 et 10.');
   }
+  const type = input.type === 'sleep' ? 'sleep' : 'pain';
 
   const measurement = {
     id: newId('msr'),
     patientId,
     clientId,
-    type: 'pain',
+    type,
     value,
     recordedAt: input.recordedAt || nowISO(), // moment ressenti côté patient
     receivedAt: nowISO(),                      // moment de réception serveur
@@ -197,8 +246,8 @@ function addMeasurement(patientId, input) {
 }
 
 module.exports = {
-  listScenarios, getScenario, createScenario,
-  listPatients, getPatient, getPatientByPseudo, createPatient,
+  listScenarios, getScenario, createScenario, updateScenario,
+  listPatients, getPatient, getPatientByPseudo, createPatient, getScenarioIds,
   listMeasurements, addMeasurement,
   _internal: { load, persist, DB_FILE, emptyDb },
 };
