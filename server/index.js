@@ -9,7 +9,7 @@ const store = require('./store');
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const VERSION = '0.8.0';
+const VERSION = '0.8.2';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const MIME = {
@@ -251,9 +251,17 @@ function serveStatic(req, res, url) {
   const filePath = path.join(PUBLIC_DIR, safe);
   if (!filePath.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end('Forbidden'); }
   fs.stat(filePath, (err, stat) => {
-    if (err || stat.isDirectory()) {
+    if (!err && stat.isDirectory()) {
+      // /patient -> /patient/ : sans le slash final, les liens relatifs
+      // (style.css, app.js, manifest) sont résolus à la racine et échouent.
+      if (!url.pathname.endsWith('/')) {
+        res.writeHead(302, { Location: `${url.pathname}/${url.search || ''}`, 'Cache-Control': 'no-store' });
+        return res.end();
+      }
       const fallback = path.join(filePath, 'index.html');
-      if (!err && stat.isDirectory() && fs.existsSync(fallback)) return streamFile(res, fallback);
+      if (fs.existsSync(fallback)) return streamFile(res, fallback);
+    }
+    if (err || stat.isDirectory()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end('404 — fichier introuvable');
     }

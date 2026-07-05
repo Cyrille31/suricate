@@ -1,6 +1,6 @@
 {
   "name": "suricate",
-  "version": "0.8.0",
+  "version": "0.8.2",
   "description": "Suivi de la douleur post-opératoire à domicile (MVP-0).",
   "private": true,
   "type": "commonjs",

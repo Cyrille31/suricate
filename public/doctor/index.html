@@ -13,12 +13,13 @@
     <span class="subtitle">Tableau de bord médecin</span>
     <a class="moe" href="https://www.cgexcel.fr" target="_blank" rel="noopener" title="CGExcel">
       <img src="../assets/logo_cgexcel.jpg" alt="" class="moe-icon" />
-      <span class="moe-text"><span class="moe-name">CGExcel</span><span class="moe-version">v0.8.0</span></span>
+      <span class="moe-text"><span class="moe-name">CGExcel</span><span class="moe-version">v0.8.2</span></span>
     </a>
     <nav class="tabs">
       <button class="tab active" data-tab="interventions">Interventions</button>
       <button class="tab" data-tab="patients">Patients</button>
       <button class="tab" data-tab="scenarios">Scénarios</button>
+      <button id="helpBtn" class="help-tab" type="button" title="Mode d'emploi">? Mode d'emploi</button>
     </nav>
   </header>
 
@@ -250,6 +251,74 @@
         <button id="ficheSave" class="btn btn-primary">Enregistrer</button>
         <button id="ficheCancel" class="btn btn-ghost">Annuler</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Mode d'emploi médecin -->
+  <div id="helpModal" class="modal-overlay" hidden>
+    <div class="modal help-modal" role="dialog" aria-modal="true" aria-label="Mode d'emploi">
+      <div class="help-head">
+        <h2>Mode d'emploi — tableau de bord médecin</h2>
+        <button id="helpClose" class="btn btn-sm btn-ghost">Fermer</button>
+      </div>
+
+      <p class="muted">Cette application permet de suivre à distance la douleur et le sommeil de patients après une opération, à partir de leurs saisies sur smartphone, et de repérer les valeurs qui sortent du seuil attendu.</p>
+
+      <h3>1 · Vue d'ensemble</h3>
+      <p>Le tableau de bord comporte trois onglets :</p>
+      <ul>
+        <li><strong>Interventions</strong> — le suivi lui-même : liste des épisodes opératoires, courbes de douleur et de sommeil, alertes.</li>
+        <li><strong>Patients</strong> — les personnes. Un même patient peut avoir <em>plusieurs</em> interventions ; on réutilise ses informations sans les ressaisir.</li>
+        <li><strong>Scénarios</strong> — les modèles de suivi (quelle mesure, à quelle fréquence, avec quel seuil d'alerte).</li>
+      </ul>
+      <p><strong>Patient</strong> = la personne. <strong>Intervention</strong> = un épisode opératoire de cette personne (une hanche, puis un genou plus tard = deux interventions pour le même patient). Un badge <span class="badge">déjà suivi</span> signale les patients ayant plus d'une intervention.</p>
+
+      <h3>2 · Créer un scénario (à faire en premier)</h3>
+      <p>Onglet <strong>Scénarios → + Nouveau</strong>. Un scénario définit :</p>
+      <ul>
+        <li>la <strong>mesure</strong> (douleur ou sommeil) et la <strong>précision</strong> de la jauge (entier, 1 ou 2 décimales) ;</li>
+        <li>un <strong>décalage au démarrage</strong> facultatif, pour enchaîner un scénario après un autre ;</li>
+        <li>une ou plusieurs <strong>phases</strong>, chacune avec un libellé, une durée (jours), une fréquence de saisie attendue, et un <strong>seuil d'alerte</strong> début → fin (le seuil évolue linéairement sur la phase ; laissé vide = pas d'alerte, typique du sommeil).</li>
+      </ul>
+      <p>Vous pouvez partir d'un scénario existant (liste « Partir d'un scénario existant ») ou en « Dupliquer comme nouveau » pour gagner du temps.</p>
+
+      <h3>3 · Créer un patient</h3>
+      <p>Onglet <strong>Patients → + Nouveau</strong>. Les champs <span style="color:var(--teal);font-weight:600">en bleu</span> (nom, téléphone, e-mail, adresse) constituent la <strong>fiche confidentielle</strong> et restent sur ce poste. Le sexe et la tranche d'âge, anonymes, sont enregistrés pour la recherche.</p>
+
+      <h3>4 · Créer une intervention</h3>
+      <p>Onglet <strong>Interventions → + Nouvelle</strong> (ou, depuis une fiche patient, <strong>+ Intervention</strong> pour réutiliser la personne). On choisit le patient, on donne :</p>
+      <ul>
+        <li>un <strong>pseudo d'intervention</strong> — c'est le code que le patient saisira dans son application (ex. <em>HAN-1</em>) ;</li>
+        <li>l'<strong>opération</strong> et la <strong>date de début</strong> ;</li>
+        <li>un ou plusieurs <strong>scénarios</strong> (souvent douleur + sommeil).</li>
+      </ul>
+      <p>Communiquez ensuite ce pseudo au patient : c'est sa seule clé de connexion.</p>
+
+      <h3>5 · Lire une courbe</h3>
+      <p>Ouvrez une intervention. La courbe de douleur affiche :</p>
+      <ul class="legend-list">
+        <li><span class="lg lg-band"></span> la <strong>zone de seuil</strong> (gabarit) : sa limite haute peut varier selon la phase ;</li>
+        <li><span class="lg lg-line"></span> un <strong>point plein</strong> : saisie faite à l'heure attendue ;</li>
+        <li><span class="lg lg-spont"></span> un <strong>cercle creux</strong> : saisie spontanée (le patient a ouvert l'app de lui-même, hors créneau) ;</li>
+        <li><span class="lg lg-missed">×</span> une <strong>croix</strong> : créneau manqué — aucune réponse ; la valeur est <em>interpolée</em> entre les mesures connues ;</li>
+        <li><span class="lg lg-alert"></span> un <strong>point rouge</strong> : valeur <strong>au-dessus du seuil</strong> (alerte).</li>
+      </ul>
+      <p>Quand au moins une valeur dépasse le seuil, un bandeau d'alerte s'affiche en haut de l'intervention.</p>
+
+      <h3>6 · Manipuler la courbe</h3>
+      <p><strong>Molette</strong> = zoom (centré sur le curseur). <strong>Cliquer-glisser</strong> sur la courbe = déplacer la fenêtre à gauche/droite. L'<strong>ascenseur</strong> sous la courbe de douleur fait la même chose, et pilote les deux courbes. Boutons <strong>+ / − Zoom</strong> et <strong>Réinitialiser</strong> pour revenir à la vue complète.</p>
+
+      <h3>7 · Rechercher et filtrer les alertes</h3>
+      <p>Le champ de recherche filtre la liste par nom, pseudo ou opération. La case <strong>« ⚠ Alertes uniquement »</strong> n'affiche que les interventions en alerte (également repérées par un <span class="alert-ico">⚠</span> et une pastille rouge).</p>
+
+      <h3>8 · Fiche confidentielle & confidentialité</h3>
+      <p>Dans une intervention ou une fiche patient, <strong>« Éditer la fiche »</strong> ouvre la saisie du nom et des contacts. Ces informations <strong>ne quittent jamais ce poste</strong> (stockées dans le navigateur) : le serveur ne connaît que des pseudos et des données anonymes destinées à la recherche.</p>
+      <p class="muted"><strong>Version de test :</strong> cette configuration en ligne n'assure pas la confidentialité finale (pas d'hébergement de santé agréé). À n'utiliser qu'avec des données fictives, jamais de vraies données patients nominatives.</p>
+
+      <h3>9 · Ce que voit le patient</h3>
+      <p>Le patient se connecte avec le pseudo d'intervention, déplace une jauge de 0 à 10 et valide. Il peut saisir à tout moment, revoir ses propres courbes, et consulter son mode d'emploi. Ses saisies apparaissent chez vous en quasi temps réel (après rechargement).</p>
+
+      <div class="help-foot"><button id="helpClose2" class="btn btn-primary">J'ai compris</button></div>
     </div>
   </div>
 

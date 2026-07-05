@@ -591,6 +591,14 @@ function init() {
   migratePrivate();
   document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
+  // Mode d'emploi
+  const helpModal = document.getElementById('helpModal');
+  const closeHelp = () => { helpModal.hidden = true; };
+  document.getElementById('helpBtn').addEventListener('click', () => { helpModal.scrollTop = 0; helpModal.hidden = false; });
+  document.getElementById('helpClose').addEventListener('click', closeHelp);
+  document.getElementById('helpClose2').addEventListener('click', closeHelp);
+  helpModal.addEventListener('click', (e) => { if (e.target === helpModal) closeHelp(); });
+
   // Interventions
   document.getElementById('itvSearch').addEventListener('input', renderInterventionList);
   document.getElementById('itvAlertOnly').addEventListener('change', renderInterventionList);
