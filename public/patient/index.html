@@ -12,6 +12,7 @@
   <header class="topbar">
     <img class="logo" src="../assets/logo_suricate.gif" alt="" />
     <span class="brand">Suricate</span>
+    <span id="whoami" class="who" hidden></span>
     <span id="netStatus" class="pill" role="status">Hors&nbsp;ligne</span>
     <button id="logoutBtn" class="logout" hidden>Quitter</button>
   </header>
@@ -46,6 +47,7 @@
       <button id="gaugeSkip" class="btn btn-ghost" hidden>Passer cette question</button>
 
       <p id="pendingNote" class="muted" hidden></p>
+      <button id="chartsFromGauge" class="btn btn-ghost">Voir mes courbes</button>
       <button id="manualReminder" class="btn btn-ghost">Programmer un rappel de test</button>
     </section>
 
@@ -55,17 +57,35 @@
       <h1>Merci, c'est enregistré</h1>
       <p id="doneDetail" class="lead"></p>
       <button id="againBtn" class="btn btn-primary btn-big">Faire une nouvelle saisie</button>
-      <button id="helpBtn" class="btn btn-ghost">Aide &amp; numéros utiles</button>
+      <button id="chartsBtn" class="btn btn-ghost">Voir mes courbes</button>
+      <button id="helpBtn" class="btn btn-ghost">Mode d'emploi</button>
     </section>
 
-    <!-- Aide -->
+    <!-- Mes courbes -->
+    <section id="screen-chart" class="screen" hidden>
+      <h1>Mes courbes</h1>
+      <p class="lead">Voici ce que vous avez déjà saisi.</p>
+      <div id="patientCharts"></div>
+      <button id="chartAgainBtn" class="btn btn-primary btn-big">Faire une nouvelle saisie</button>
+      <button id="helpFromChart" class="btn btn-ghost">Mode d'emploi</button>
+      <button id="chartBackBtn" class="btn btn-ghost">Retour</button>
+    </section>
+
+    <!-- Mode d'emploi -->
     <section id="screen-help" class="screen" hidden>
-      <h1>Aide</h1>
-      <p>À chaque rappel, ouvrez l'application et renseignez les jauges demandées,
-         puis validez. Hors réseau, vos saisies sont gardées et envoyées plus tard.</p>
+      <h1>Mode d'emploi</h1>
+      <ol class="howto">
+        <li><strong>Se connecter</strong> — saisissez le pseudo remis par votre médecin (ex. <em>HAN-1</em>). Il reste mémorisé sur cet appareil ; il est rappelé en haut de l'écran.</li>
+        <li><strong>Faire une saisie</strong> — déplacez le curseur de la jauge jusqu'à la valeur ressentie (0 à 10), puis appuyez sur <em>Validation</em>. S'il y a plusieurs mesures (douleur, sommeil…), elles s'enchaînent.</li>
+        <li><strong>Passer une question</strong> — si un bouton « Passer cette question » apparaît, vous pouvez l'ignorer.</li>
+        <li><strong>Saisir quand vous voulez</strong> — ouvrez l'application et faites une saisie à tout moment, même sans rappel, avec « Faire une nouvelle saisie ».</li>
+        <li><strong>Voir vos courbes</strong> — « Voir mes courbes » affiche l'historique de vos saisies, avec les dates.</li>
+        <li><strong>Hors réseau</strong> — vos saisies sont conservées sur l'appareil et envoyées automatiquement au retour d'Internet (un compteur indique les saisies en attente).</li>
+        <li><strong>Rappels</strong> — « Programmer un rappel de test » envoie une notification de démonstration.</li>
+      </ol>
       <div class="card warn">
         <strong>En cas d'urgence, appelez le 15 (SAMU).</strong>
-        <p>Cette application ne remplace pas un appel d'urgence.</p>
+        <p>Cette application ne remplace pas un appel d'urgence ni un avis médical.</p>
       </div>
       <p class="muted">Questions sur le suivi : contactez votre médecin.</p>
       <button id="backBtn" class="btn btn-ghost">Retour</button>
@@ -73,9 +93,9 @@
   </main>
 
   <footer class="signature">
-    <img src="../assets/logo_suricate.gif" alt="" />
+    <img src="../assets/logo_cgexcel.jpg" alt="" />
     <span class="sig-name">CGExcel</span>
-    <span class="sig-version">v0.4.0</span>
+    <span class="sig-version">v0.8.0</span>
   </footer>
 
   <script src="app.js"></script>

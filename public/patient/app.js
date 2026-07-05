@@ -15,6 +15,7 @@ const screens = {
   connect: document.getElementById('screen-connect'),
   gauge: document.getElementById('screen-gauge'),
   done: document.getElementById('screen-done'),
+  chart: document.getElementById('screen-chart'),
   help: document.getElementById('screen-help'),
 };
 const netStatus = document.getElementById('netStatus');
@@ -26,12 +27,17 @@ let steps = [];           // séquence de métriques à saisir
 let currentStep = 0;
 let sessionTime = null;   // horodatage commun à une session de saisie
 let collected = [];       // mesures saisies durant la session
+let chartReturn = 'done'; // écran de retour depuis « Mes courbes »
+let helpReturn = 'done';  // écran de retour depuis le mode d'emploi
 
 // --- Utilitaires ----------------------------------------------------------
 
 function show(name) {
   Object.entries(screens).forEach(([k, el]) => { el.hidden = k !== name; });
   document.getElementById('logoutBtn').hidden = (name === 'connect');
+  const who = document.getElementById('whoami');
+  who.hidden = (name === 'connect') || !patient;
+  if (patient && patient.pseudo) who.textContent = `Pseudo : ${patient.pseudo}`;
 }
 function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() : 'm-' + Date.now() + '-' + Math.random().toString(16).slice(2);
@@ -50,6 +56,57 @@ function updatePendingNote() {
   const note = document.getElementById('pendingNote');
   if (n > 0) { note.hidden = false; note.textContent = `${n} saisie(s) en attente d'envoi.`; }
   else note.hidden = true;
+}
+
+function openHelp(returnTo) { helpReturn = returnTo || 'done'; show('help'); }
+
+// --- Mes courbes (vue patient) -------------------------------------------
+
+async function openCharts(returnTo) {
+  chartReturn = returnTo || 'done';
+  const box = document.getElementById('patientCharts');
+  box.innerHTML = '<p class="muted">Chargement…</p>';
+  show('chart');
+  if (!navigator.onLine) { box.innerHTML = '<p class="muted">Indisponible hors ligne. Reconnectez-vous au réseau pour voir vos courbes.</p>'; return; }
+  try {
+    const res = await fetch(`${API}/api/interventions/${patient.id}/series`);
+    if (!res.ok) throw new Error();
+    const s = await res.json();
+    const html = miniChart('Douleur', s.pain, '#0E7C7B') + miniChart('Sommeil', s.sleep, '#2e7d6b');
+    box.innerHTML = html || '<p class="muted">Aucune saisie pour le moment.</p>';
+  } catch { box.innerHTML = '<p class="muted">Impossible de récupérer vos courbes pour le moment.</p>'; }
+}
+
+function miniChart(title, ms, color) {
+  const pts = (ms && ms.points) || [], missed = (ms && ms.missed) || [];
+  if (!ms || (!ms.scenario && !pts.length)) return '';
+  if (!pts.length) return `<div class="mini"><h3>${title}</h3><p class="muted">Aucune saisie pour le moment.</p></div>`;
+  const W = 320, H = 150, padL = 22, padR = 10, padT = 10, padB = 20;
+  const all = pts.concat(missed).map((p) => new Date(p.t).getTime());
+  let t0 = Math.min(...all), t1 = Math.max(...all); if (t1 === t0) t1 = t0 + 3600000;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const x = (t) => padL + ((new Date(t).getTime() - t0) / (t1 - t0)) * plotW;
+  const y = (v) => padT + plotH - (Math.max(0, Math.min(10, v)) / 10) * plotH;
+  const out = [`<div class="mini"><h3>${title}</h3><svg viewBox="0 0 ${W} ${H}" class="mini-svg">`];
+  for (let v = 0; v <= 10; v += 5) { const yy = y(v); out.push(`<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="#eef2f4"/><text x="${padL - 6}" y="${yy + 3}" text-anchor="end" font-size="9" fill="#5B6B7A">${v}</text>`); }
+  // Dates en bas (début · milieu · fin)
+  const fmtD = (t) => new Date(t).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+  const labY = H - 6;
+  out.push(`<text x="${padL}" y="${labY}" text-anchor="start" font-size="9" fill="#5B6B7A">${fmtD(t0)}</text>`);
+  if (t1 - t0 > 36 * 3600 * 1000) out.push(`<text x="${padL + plotW / 2}" y="${labY}" text-anchor="middle" font-size="9" fill="#5B6B7A">${fmtD((t0 + t1) / 2)}</text>`);
+  out.push(`<text x="${W - padR}" y="${labY}" text-anchor="end" font-size="9" fill="#5B6B7A">${fmtD(t1)}</text>`);
+  if (pts.length > 1) out.push(`<path d="${pts.map((q, i) => `${i ? 'L' : 'M'}${x(q.t).toFixed(1)} ${y(q.value).toFixed(1)}`).join(' ')}" fill="none" stroke="${color}" stroke-width="2"/>`);
+  missed.forEach((m) => { const r = 3.2, xx = x(m.t), yy = y(m.value); out.push(`<path d="M${(xx - r).toFixed(1)} ${(yy - r).toFixed(1)} L${(xx + r).toFixed(1)} ${(yy + r).toFixed(1)} M${(xx - r).toFixed(1)} ${(yy + r).toFixed(1)} L${(xx + r).toFixed(1)} ${(yy - r).toFixed(1)}" stroke="#9AA8B4" stroke-width="1.6"/>`); });
+  pts.forEach((q) => {
+    const xx = x(q.t).toFixed(1), yy = y(q.value).toFixed(1);
+    if (q.kind === 'spontaneous') out.push(`<circle cx="${xx}" cy="${yy}" r="3.6" fill="#fff" stroke="${q.outOfBounds ? '#C0392B' : color}" stroke-width="2"/>`);
+    else out.push(`<circle cx="${xx}" cy="${yy}" r="${q.outOfBounds ? 4.2 : 3.4}" fill="${q.outOfBounds ? '#C0392B' : color}"/>`);
+  });
+  const hasAlert = pts.some((p) => p.outOfBounds);
+  const legend = `<span style="color:${color}">●</span> à l'heure · ○ saisie spontanée · × créneau manqué`
+    + (hasAlert ? ` · <span style="color:#C0392B">●</span> au-dessus du seuil` : '');
+  out.push(`</svg><p class="mini-legend">${legend}</p></div>`);
+  return out.join('');
 }
 
 // --- Définition des métriques --------------------------------------------
@@ -93,13 +150,13 @@ async function connect(pseudo) {
 
   if (navigator.onLine) {
     try {
-      const res = await fetch(`${API}/api/patients/by-pseudo/${encodeURIComponent(pseudo)}`);
+      const res = await fetch(`${API}/api/interventions/by-pseudo/${encodeURIComponent(pseudo)}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         err.textContent = body.error || 'Pseudo inconnu.'; err.hidden = false; return;
       }
       const data = await res.json();
-      patient = { id: data.patient.id, pseudo: data.patient.pseudo };
+      patient = { id: data.intervention.id, pseudo: data.intervention.pseudo };
       scenarios = data.scenarios || [];
       localStorage.setItem(LS_PATIENT, JSON.stringify({ ...patient, scenarios }));
     } catch {
@@ -147,7 +204,7 @@ function updateGaugeOutput() {
 
 function validateStep() {
   const st = steps[currentStep];
-  collected.push({ clientId: uuid(), type: st.metric, value: Number(slider.value), recordedAt: sessionTime });
+  collected.push({ clientId: uuid(), type: st.metric, value: Number(slider.value), recordedAt: sessionTime, source: 'spontaneous' });
   nextStep();
 }
 function skipStep() { nextStep(); }
@@ -174,7 +231,7 @@ async function sendMeasurements(patientId, items) {
   if (!items.length) return true;
   if (navigator.onLine) {
     try {
-      const res = await fetch(`${API}/api/patients/${patientId}/measurements`, {
+      const res = await fetch(`${API}/api/interventions/${patientId}/measurements`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }),
       });
       if (res.ok) return true;
@@ -196,7 +253,7 @@ async function flushQueue() {
   const stillPending = [];
   for (const [pid, items] of Object.entries(byPatient)) {
     try {
-      const res = await fetch(`${API}/api/patients/${pid}/measurements`, {
+      const res = await fetch(`${API}/api/interventions/${pid}/measurements`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }),
       });
       if (!res.ok) items.forEach((m) => stillPending.push({ patientId: pid, measurement: m }));
@@ -234,9 +291,14 @@ function init() {
   document.getElementById('gaugeValidate').addEventListener('click', validateStep);
   document.getElementById('gaugeSkip').addEventListener('click', skipStep);
   document.getElementById('againBtn').addEventListener('click', startSequence);
+  document.getElementById('chartsBtn').addEventListener('click', () => openCharts('done'));
+  document.getElementById('chartsFromGauge').addEventListener('click', () => openCharts('gauge'));
+  document.getElementById('chartBackBtn').addEventListener('click', () => show(chartReturn));
+  document.getElementById('chartAgainBtn').addEventListener('click', startSequence);
+  document.getElementById('helpFromChart').addEventListener('click', () => openHelp('chart'));
   document.getElementById('manualReminder').addEventListener('click', scheduleReminder);
-  document.getElementById('helpBtn').addEventListener('click', () => show('help'));
-  document.getElementById('backBtn').addEventListener('click', () => show('done'));
+  document.getElementById('helpBtn').addEventListener('click', () => openHelp('done'));
+  document.getElementById('backBtn').addEventListener('click', () => show(helpReturn));
   document.getElementById('logoutBtn').addEventListener('click', logout);
 
   window.addEventListener('online', () => { updateNet(); flushQueue(); });

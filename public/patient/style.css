@@ -13,6 +13,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -220,6 +221,19 @@ h1 { font-size: 1.55rem; line-height: 1.2; margin: 12px 0 6px; }
   padding-bottom: max(14px, env(safe-area-inset-bottom));
   color: var(--muted); font-size: .8rem;
 }
-.signature img { width: 20px; height: 20px; border-radius: 5px; object-fit: cover; }
+.signature img { width: 28px; height: 22px; border-radius: 4px; object-fit: contain; background: #fff; }
 .signature .sig-name { font-weight: 700; color: var(--teal); }
 .signature .sig-version { color: var(--muted); }
+
+/* Pseudo dans l'entête */
+.who { font-size: .8rem; color: var(--muted, #5B6B7A); margin-left: 6px; }
+
+/* Mes courbes (vue patient) */
+.mini { margin: 10px 0 4px; text-align: left; }
+.mini h3 { margin: 0 0 4px; font-size: 1rem; }
+.mini-svg { width: 100%; height: auto; display: block; background: #fff; border: 1px solid #eef2f4; border-radius: 10px; }
+.mini-legend { margin: 4px 0 0; font-size: .75rem; color: var(--muted, #5B6B7A); }
+
+/* Mode d'emploi */
+.howto { text-align: left; margin: 8px 0 14px; padding-left: 22px; }
+.howto li { margin-bottom: 8px; line-height: 1.45; }

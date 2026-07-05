@@ -7,7 +7,7 @@
    Les appels API ne sont jamais mis en cache (la synchro hors-ligne est gérée
    par la file d'attente dans app.js). */
 
-const CACHE = 'suricate-patient-v3';
+const CACHE = 'suricate-patient-v14';
 const SHELL = [
   './',
   './index.html',

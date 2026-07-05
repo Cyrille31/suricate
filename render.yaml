@@ -1,0 +1,20 @@
+# Déploiement "1 clic" sur Render (https://render.com) à partir du dépôt GitHub.
+# Render lit ce fichier (Blueprint). Renseignez ensuite les variables marquées
+# sync:false dans l'interface (valeurs secrètes Upstash + jeton d'admin).
+services:
+  - type: web
+    name: suricate
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: KV_REST_API_URL        # URL REST Upstash Redis
+        sync: false
+      - key: KV_REST_API_TOKEN      # Jeton REST Upstash Redis
+        sync: false
+      - key: ADMIN_TOKEN            # Mot de passe pour /admin.html (choisissez-en un)
+        sync: false

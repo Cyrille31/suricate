@@ -14,6 +14,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -94,16 +95,64 @@ main { max-width: 1200px; margin: 0 auto; padding: 22px; }
   padding: 12px 16px; border-radius: var(--radius); font-weight: 600; margin-bottom: 8px;
 }
 
-/* Graphique SVG (largeur explicite -> ascenseur horizontal réel) */
-.chart { width: 100%; overflow-x: auto; overflow-y: hidden; }
-.chart svg { display: block; }
+/* Graphique SVG : viewBox fixe qui s'adapte à la largeur du conteneur */
+.chart { width: 100%; cursor: grab; touch-action: pan-y; }
+.chart.grabbing { cursor: grabbing; }
+.chart svg { display: block; width: 100%; height: auto; }
 .chart-hint { color: var(--muted); font-size: .8rem; margin: 6px 0 0; }
+.chart-tools { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.chart-tools .btn { border: 1px solid var(--border); }
+.chart-tools .chart-hint { margin: 0 0 0 4px; }
+.panbar-wrap { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.panbar-label { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+.panbar { flex: 1; }
+.panbar:disabled { opacity: .4; }
+
+/* Recherche */
+.search { width: 100%; padding: 9px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: .9rem; }
+.search:focus { outline: 2px solid var(--teal); border-color: var(--teal); }
+
+/* Filtre "alertes uniquement" + icône d'alerte */
+.filter-alert { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--muted); margin-bottom: 10px; cursor: pointer; }
+.filter-alert input { cursor: pointer; }
+.alert-ico { color: var(--warn); font-weight: 700; }
+
+/* Badge "déjà suivi" */
+.badge { display: inline-block; font-size: .68rem; font-weight: 700; color: #fff; background: var(--warn); border-radius: 999px; padding: 1px 8px; vertical-align: 1px; }
+
+/* Liste des interventions d'un patient */
+.itv-list { list-style: none; margin: 0; padding: 0; }
+.itv-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.itv-list li:last-child { border-bottom: none; }
+
+/* Ascenseur proportionnel : barre native dont le pouce reflète la portion visible */
+.hscroll { overflow-x: auto; overflow-y: hidden; height: 16px; margin-top: 10px; }
+.hscroll-inner { height: 1px; }
+
+/* Champs d'identité (privés) mis en évidence */
+.priv > input { border-left: 4px solid var(--teal); }
+
+/* Fiche confidentielle (base privée, sur le poste du médecin) */
+.fiche { border-left: 4px solid var(--teal); }
+.fiche-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.fiche-head h3 { margin: 0; }
+.fiche-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+.fiche-grid dt { color: var(--muted); font-size: .85rem; font-weight: 600; }
+.fiche-grid dd { margin: 0; }
+
+/* Fenêtre modale */
+.modal-overlay { position: fixed; inset: 0; background: rgba(27,39,51,.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+.modal-overlay[hidden] { display: none; }
+.modal { background: var(--surface); border-radius: 14px; padding: 22px; width: 100%; max-width: 520px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+.modal h3 { margin: 0 0 4px; }
 .chart-key { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted); font-size: .85rem; margin-top: 10px; }
 .chart-key i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
 .key-band { background: rgba(14,124,123,.15); border: 1px solid rgba(14,124,123,.4); }
 .key-line { background: var(--teal); border-radius: 50% !important; }
 .key-alert { background: var(--alert); border-radius: 50% !important; }
 .key-sleep { background: #2e7d6b; border-radius: 50% !important; }
+.key-spont { background: #fff; border: 2px solid var(--teal); border-radius: 50% !important; }
+.key-missed { background: transparent !important; color: #9AA8B4; font-weight: 700; font-style: normal; width: auto !important; height: auto !important; line-height: 1; }
 
 /* Formulaires */
 .form label { display: block; margin-bottom: 12px; font-weight: 600; font-size: .9rem; }

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Suricate — Administration (test)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 560px; margin: 40px auto; padding: 0 16px; color: #1B2733; }
+    h1 { color: #0E7C7B; }
+    .card { border: 1px solid #e3e9ec; border-radius: 12px; padding: 18px; margin-top: 16px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #cfd8dd; border-radius: 8px; font-size: 1rem; }
+    button { margin-top: 12px; margin-right: 8px; padding: 10px 16px; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+    .primary { background: #0E7C7B; color: #fff; }
+    .ghost { background: #fff; color: #0E7C7B; border: 1px solid #0E7C7B; }
+    .muted { color: #5B6B7A; font-size: .9rem; }
+    #out { margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: #f3f6f7; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Administration — version de test</h1>
+  <p class="muted">Réservé à la mise en place du jeu de démonstration. Nécessite le jeton défini côté serveur (<code>ADMIN_TOKEN</code>).</p>
+  <div class="card">
+    <label for="tok">Jeton d'administration</label>
+    <input id="tok" type="password" placeholder="ADMIN_TOKEN" autocomplete="off" />
+    <button id="seed" class="primary">Charger les données de démo</button>
+    <button id="reset" class="ghost">Vider la base</button>
+    <div id="out" hidden></div>
+  </div>
+  <p class="muted">Ensuite : app patient → <code>/patient/</code> · tableau de bord → <code>/doctor/</code></p>
+  <script>
+    const out = document.getElementById('out');
+    function show(msg) { out.hidden = false; out.textContent = msg; }
+    async function call(path) {
+      const tok = document.getElementById('tok').value.trim();
+      if (!tok) return show('Saisissez le jeton.');
+      show('En cours…');
+      try {
+        const res = await fetch('/api' + path, { method: 'POST', headers: { 'x-admin-token': tok } });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) return show('Échec : ' + (body.error || res.status));
+        show('OK : ' + JSON.stringify(body));
+      } catch (e) { show('Erreur réseau : ' + e.message); }
+    }
+    document.getElementById('seed').addEventListener('click', () => call('/admin/seed-demo'));
+    document.getElementById('reset').addEventListener('click', () => call('/admin/reset'));
+  </script>
+</body>
+</html>

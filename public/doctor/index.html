@@ -13,39 +13,50 @@
     <span class="subtitle">Tableau de bord médecin</span>
     <a class="moe" href="https://www.cgexcel.fr" target="_blank" rel="noopener" title="CGExcel">
       <img src="../assets/logo_cgexcel.jpg" alt="" class="moe-icon" />
-      <span class="moe-text"><span class="moe-name">CGExcel</span><span class="moe-version">v0.4.0</span></span>
+      <span class="moe-text"><span class="moe-name">CGExcel</span><span class="moe-version">v0.8.0</span></span>
     </a>
     <nav class="tabs">
-      <button class="tab active" data-tab="patients">Patients</button>
+      <button class="tab active" data-tab="interventions">Interventions</button>
+      <button class="tab" data-tab="patients">Patients</button>
       <button class="tab" data-tab="scenarios">Scénarios</button>
     </nav>
   </header>
 
   <main>
-    <!-- Onglet PATIENTS -->
-    <section id="tab-patients" class="tab-panel">
+    <!-- ===================== ONGLET INTERVENTIONS ===================== -->
+    <section id="tab-interventions" class="tab-panel">
       <div class="layout">
         <aside class="sidebar">
           <div class="sidebar-head">
-            <h2>Patients</h2>
-            <button id="newPatientBtn" class="btn btn-sm btn-primary">+ Nouveau</button>
+            <h2>Interventions</h2>
+            <button id="newInterventionBtn" class="btn btn-sm btn-primary">+ Nouvelle</button>
           </div>
-          <ul id="patientList" class="patient-list"></ul>
-          <p class="privacy-note">
-            Le nom des patients n'est <strong>jamais</strong> envoyé au serveur.
-            La correspondance pseudo ↔ nom reste sur ce poste (navigateur).
-          </p>
+          <input id="itvSearch" class="search" type="search" placeholder="Rechercher (nom ou pseudo)…" />
+          <label class="filter-alert"><input type="checkbox" id="itvAlertOnly" /> <span class="alert-ico">⚠</span> Alertes uniquement</label>
+          <ul id="interventionList" class="patient-list"></ul>
+          <p class="privacy-note">Le nom du patient ne quitte jamais ce poste.</p>
         </aside>
 
         <div class="content">
-          <!-- Détail patient -->
-          <div id="patientDetail" class="detail" hidden>
+          <!-- Détail intervention -->
+          <div id="interventionDetail" class="detail" hidden>
             <div id="alertBanner" class="alert-banner" hidden></div>
             <div class="detail-head">
               <div>
                 <h2 id="dName">—</h2>
                 <p class="muted" id="dMeta">—</p>
               </div>
+            </div>
+            <div class="card fiche">
+              <div class="fiche-head">
+                <h3>Fiche confidentielle <span class="muted">(sur ce poste uniquement)</span></h3>
+                <button id="editFiche" class="btn btn-sm btn-primary">Éditer la fiche</button>
+              </div>
+              <dl id="ficheBody" class="fiche-grid"></dl>
+              <p class="privacy-note" style="margin-top:8px">
+                Identité et contacts restent sur ce poste. Le serveur ne connaît que
+                le pseudo et les données anonymes destinées à la recherche.
+              </p>
             </div>
             <div class="card">
               <h3>Évolution de la douleur</h3>
@@ -54,8 +65,16 @@
                 <span><i class="key-band"></i> Seuil d'alerte (variable)</span>
                 <span><i class="key-line"></i> Douleur déclarée</span>
                 <span><i class="key-alert"></i> Hors gabarit (alerte)</span>
+                <span><i class="key-spont"></i> Saisie spontanée</span>
+                <span><i class="key-missed">×</i> Manquée (interpolée)</span>
               </div>
-              <p class="chart-hint">Molette de la souris = zoom · barre en bas = défilement horizontal.</p>
+              <div class="chart-tools">
+                <button id="zoomOut" class="btn btn-sm btn-ghost">− Zoom</button>
+                <button id="zoomReset" class="btn btn-sm btn-ghost">Réinitialiser</button>
+                <button id="zoomIn" class="btn btn-sm btn-ghost">+ Zoom</button>
+                <span class="chart-hint">Molette = zoom · glisser la courbe ou l’ascenseur = déplacer (les deux courbes).</span>
+              </div>
+              <div class="hscroll" id="chartScroll"><div class="hscroll-inner" id="chartScrollInner"></div></div>
             </div>
             <div class="card">
               <h3>Qualité du sommeil</h3>
@@ -66,35 +85,92 @@
             </div>
           </div>
 
+          <!-- Création intervention -->
+          <div id="interventionForm" class="detail" hidden>
+            <h2>Nouvelle intervention</h2>
+            <div class="card form">
+              <label>Patient
+                <select id="iPatient"></select>
+              </label>
+              <label>Pseudo de l'intervention <span class="muted">(code remis au patient)</span>
+                <input id="iPseudo" type="text" placeholder="ex. HAN-5" />
+              </label>
+              <div class="row">
+                <label>Opération
+                  <input id="iOperation" type="text" placeholder="ex. Prothèse de hanche" />
+                </label>
+                <label>Date de début
+                  <input id="iStart" type="date" />
+                </label>
+              </div>
+              <label>Scénarios <span class="muted">(un ou plusieurs, ex. douleur + sommeil)</span></label>
+              <div id="iScenarios" class="checklist"></div>
+              <p id="iError" class="error" hidden></p>
+              <div class="actions">
+                <button id="saveIntervention" class="btn btn-primary">Créer l'intervention</button>
+                <button id="cancelIntervention" class="btn btn-ghost">Annuler</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="emptyItv" class="empty"><p>Sélectionnez une intervention, ou créez-en une.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ONGLET PATIENTS ===================== -->
+    <section id="tab-patients" class="tab-panel" hidden>
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-head">
+            <h2>Patients</h2>
+            <button id="newPatientBtn" class="btn btn-sm btn-primary">+ Nouveau</button>
+          </div>
+          <input id="patSearch" class="search" type="search" placeholder="Rechercher (nom ou pseudo)…" />
+          <ul id="patientList" class="patient-list"></ul>
+        </aside>
+
+        <div class="content">
+          <!-- Détail patient (personne) -->
+          <div id="patientDetail" class="detail" hidden>
+            <div class="detail-head">
+              <div>
+                <h2 id="pName">—</h2>
+                <p class="muted" id="pMeta">—</p>
+              </div>
+              <button id="newItvForPatient" class="btn btn-sm btn-primary">+ Intervention</button>
+            </div>
+            <div class="card fiche">
+              <div class="fiche-head">
+                <h3>Fiche confidentielle <span class="muted">(sur ce poste uniquement)</span></h3>
+                <button id="editFiche2" class="btn btn-sm btn-primary">Éditer la fiche</button>
+              </div>
+              <dl id="ficheBody2" class="fiche-grid"></dl>
+            </div>
+            <div class="card">
+              <h3>Interventions de ce patient</h3>
+              <ul id="patientItvList" class="itv-list"></ul>
+            </div>
+          </div>
+
           <!-- Création patient -->
           <div id="patientForm" class="detail" hidden>
             <h2>Nouveau patient</h2>
             <div class="card form">
-              <label>Nom du patient <span class="muted">(reste sur ce poste)</span>
-                <input id="fName" type="text" placeholder="Nom complet" />
-              </label>
-              <label>Pseudo <span class="muted">(envoyé au serveur)</span>
-                <input id="fPseudo" type="text" placeholder="ex. patient-2024-017" />
-              </label>
-              <label>Scénarios <span class="muted">(un ou plusieurs, ex. douleur + sommeil)</span></label>
-              <div id="fScenarios" class="checklist"></div>
+              <p class="muted" style="margin-top:0">Identité et contacts (en bleu) restent sur ce poste ; sexe et âge (anonymes) vont au serveur pour la recherche.</p>
+              <label class="priv">Nom complet<input id="fName" type="text" placeholder="Nom complet" /></label>
               <div class="row">
-                <label>Opération
-                  <input id="fOperation" type="text" placeholder="ex. Prothèse de hanche" />
-                </label>
-                <label>Tranche d'âge
-                  <input id="fAge" type="text" placeholder="ex. 60-69" />
-                </label>
+                <label class="priv">Téléphone<input id="fPhone" type="tel" placeholder="06 12 34 56 78" /></label>
+                <label class="priv">E-mail<input id="fEmail" type="email" placeholder="patient@exemple.fr" /></label>
+              </div>
+              <label class="priv">Adresse<input id="fAddress" type="text" placeholder="Adresse postale" /></label>
+              <div class="row">
+                <label>Tranche d'âge<input id="fAge" type="text" placeholder="ex. 60-69" /></label>
                 <label>Sexe
-                  <select id="fSex">
-                    <option value="">—</option>
-                    <option value="F">F</option>
-                    <option value="M">M</option>
-                    <option value="Autre">Autre</option>
-                  </select>
+                  <select id="fSex"><option value="">—</option><option value="F">F</option><option value="M">M</option><option value="Autre">Autre</option></select>
                 </label>
               </div>
-              <p id="patientFormError" class="error" hidden></p>
+              <p id="patError" class="error" hidden></p>
               <div class="actions">
                 <button id="savePatient" class="btn btn-primary">Créer le patient</button>
                 <button id="cancelPatient" class="btn btn-ghost">Annuler</button>
@@ -102,14 +178,12 @@
             </div>
           </div>
 
-          <div id="emptyState" class="empty">
-            <p>Sélectionnez un patient à gauche, ou créez-en un nouveau.</p>
-          </div>
+          <div id="emptyPat" class="empty"><p>Sélectionnez un patient, ou créez-en un.</p></div>
         </div>
       </div>
     </section>
 
-    <!-- Onglet SCÉNARIOS -->
+    <!-- ===================== ONGLET SCÉNARIOS ===================== -->
     <section id="tab-scenarios" class="tab-panel" hidden>
       <div class="layout">
         <aside class="sidebar">
@@ -127,32 +201,25 @@
               <label>Partir d'un scénario existant <span class="muted">(optionnel)</span>
                 <select id="sCopyFrom"></select>
               </label>
-              <label>Nom
-                <input id="sName" type="text" placeholder="ex. Appendicectomie — 10 jours" />
-              </label>
-              <label>Description
-                <textarea id="sDesc" rows="2" placeholder="Contexte clinique, consignes…"></textarea>
-              </label>
+              <label>Nom<input id="sName" type="text" placeholder="ex. Appendicectomie — 10 jours" /></label>
+              <label>Description<textarea id="sDesc" rows="2"></textarea></label>
               <div class="row">
                 <label>Mesure
-                  <select id="sMetric">
-                    <option value="pain">Douleur</option>
-                    <option value="sleep">Sommeil</option>
-                  </select>
+                  <select id="sMetric"><option value="pain">Douleur</option><option value="sleep">Sommeil</option></select>
                 </label>
                 <label>Précision de la jauge
-                  <select id="sPrecision">
-                    <option value="0">Entier (0,1,2…)</option>
-                    <option value="1">1 décimale (0,1)</option>
-                    <option value="2">2 décimales (0,01)</option>
-                  </select>
+                  <select id="sPrecision"><option value="0">Entier</option><option value="1">1 décimale</option><option value="2">2 décimales</option></select>
                 </label>
               </div>
-              <p class="muted" style="margin-top:0">
-                Le seuil d'alerte se définit <strong>par phase</strong> (un niveau au début
-                et à la fin) ; il varie ainsi dans le temps. Laisser vide = aucune alerte
-                (typique du sommeil).
-              </p>
+              <div class="f-seuil">
+                <span class="p-freq-title">Décalage au démarrage <span class="muted">(pour enchaîner après un autre scénario)</span></span>
+                <div class="p-freq-group">
+                  <label>jours<input id="sOffD" type="number" min="0" value="0" /></label>
+                  <label>heures<input id="sOffH" type="number" min="0" max="23" value="0" /></label>
+                  <label>min<input id="sOffM" type="number" min="0" max="59" value="0" /></label>
+                </div>
+              </div>
+              <p class="muted">Le seuil d'alerte se définit par phase (début/fin). Laisser vide = aucune alerte (sommeil).</p>
               <h3>Phases</h3>
               <div id="phaseRows"></div>
               <button id="addPhase" class="btn btn-sm btn-ghost">+ Ajouter une phase</button>
@@ -167,6 +234,24 @@
       </div>
     </section>
   </main>
+
+  <!-- Fenêtre de saisie de la fiche confidentielle -->
+  <div id="ficheModal" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Fiche confidentielle">
+      <h3>Fiche confidentielle</h3>
+      <p class="muted">Ces informations restent sur ce poste (jamais envoyées au serveur).</p>
+      <div class="form">
+        <label>Nom complet<input id="mName" type="text" /></label>
+        <label>Téléphone<input id="mPhone" type="tel" /></label>
+        <label>E-mail<input id="mEmail" type="email" /></label>
+        <label>Adresse<input id="mAddress" type="text" /></label>
+      </div>
+      <div class="actions">
+        <button id="ficheSave" class="btn btn-primary">Enregistrer</button>
+        <button id="ficheCancel" class="btn btn-ghost">Annuler</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

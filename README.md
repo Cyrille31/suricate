@@ -1,5 +1,7 @@
 # Suricate
 
+> **Version de test en ligne (validation des concepts)** : voir [`DEPLOIEMENT.md`](DEPLOIEMENT.md) — hébergement gratuit (Render + base Upstash), apps accessibles par URL sans installation.
+
 Suivi de la douleur post-opératoire à domicile.
 **Maître d'œuvre : CGExcel.** État : **MVP‑0** (prototype de démonstration).
 
@@ -60,14 +62,26 @@ npm run seed:demo # gros jeu de test : 10 scénarios, 20 patients, 15 mesures ch
   du médecin.
 - **Identité** : logos Suricate et CGExcel (maître d'œuvre) intégrés.
 
-### Confidentialité — principe retenu
+### Modèle & confidentialité (v0.7)
 
-| Donnée                     | Où elle vit                              |
-| -------------------------- | ---------------------------------------- |
-| Nom du patient             | Navigateur du médecin uniquement (local) |
-| Pseudo                     | Serveur                                  |
-| Mesures de douleur         | Serveur (rattachées au pseudo)           |
-| Opération, tranche d'âge, sexe | Serveur (données pour la recherche, anonymes) |
+Deux entités distinctes, et **deux bases séparées** :
+
+- **Patient** = la personne. Peut avoir **plusieurs interventions**. Une étude
+  de recherche peut ainsi savoir si un patient a déjà été suivi.
+- **Intervention** = un épisode opératoire (opération, date de début, scénarios,
+  mesures). C'est le pseudo de l'intervention que le patient saisit dans l'app.
+
+| Donnée                              | Où elle vit                                   |
+| ----------------------------------- | --------------------------------------------- |
+| Identité réelle (nom, tél., e-mail, adresse) | **Base patient — poste du médecin** (localStorage), jamais envoyée |
+| Pseudo patient + pseudo intervention | Base recherche (serveur)                      |
+| Sexe, tranche d'âge                 | Base recherche (serveur, patient)             |
+| Opération, date de début, scénarios | Base recherche (serveur, intervention)        |
+| Mesures (douleur, sommeil)          | Base recherche (serveur, rattachées à l'intervention) |
+
+Le tableau de bord a trois onglets : **Interventions** (suivi + courbes),
+**Patients** (personnes et leurs interventions), **Scénarios**. La liste se
+filtre par un champ de recherche (nom ou pseudo).
 
 ---
 

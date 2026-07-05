@@ -81,4 +81,4 @@ function run() {
   console.log('\nDonnées de démonstration prêtes.');
 }
 
-run();
+(async () => { await store.init(); run(); await store.flush(); })().catch((e) => { console.error(e); process.exit(1); });
